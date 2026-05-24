@@ -1,36 +1,48 @@
-# Ad Bear (IP-Watch)
+# Ad Bear
 
-Ad Bear is a comprehensive network monitoring and DNS filtering extension for Firefox. It provides real-time visibility into your browser's network connections, including GeoIP information, risk assessment, and DNS query logging.
+Firefox-only MV3 extension for network monitoring, DNS filtering, and threat intel.
 
 ## Features
 
-- **Real-time Connection Tracking**: Monitor all active TCP/UDP connections initiated by the browser.
-- **DNS Monitor**: View and log all DNS queries with detailed statistics.
-- **DNS Filtering**: Block ads, trackers, and malicious domains using customizable blocklists.
-- **Topology Map**: Visualize your network connections in an interactive graph.
-- **Risk Assessment**: Identify high-risk connections based on port fingerprints and threat intelligence.
-- **History & Alerts**: Keep track of connection history and receive alerts for suspicious activity.
+- **Connection Tracking** — real-time TCP/UDP connections with service fingerprinting (port/protocol), risk assessment, and state monitoring
+- **DNS Monitor** — live query stream, per-domain stats, top blocked/allowed, resolve times, impact severity breakdown
+- **DNS Filtering** — block ads, trackers, malware, phishing using 90+ blocklist sources (StevenBlack, OISD, HaGeZi, uBO, AdGuard, etc.) with quick template presets
+- **Topology Graph** — canvas-based force-directed graph of connections with grouping (process/service/risk) and PNG export
+- **Risk Rules** — regex-based classification (trackers, ads, malware, auth, financial, CDN, big tech, direct IP)
+- **Network Profiles** — auto-detects network (Home/Work/Public WiFi), switches DNS filtering, alert mode, and blocklist feed behavior
+- **Alerts** — port alerts (suspicious/high-risk ports), risk alerts, auto-blocking in strict mode
+- **Query Log** — searchable, filterable log with 10,000 entry cap and clear action
+- **History** — periodic snapshots with bar chart visualization, stored in IndexedDB
+- **Context Menus** — right-click any IP/domain to copy, favorite, or block
+- **Export** — CSV/JSON export of connections
 
-## Installation
+## Install
 
-This extension is designed for Firefox and utilizes Manifest V3 features. To install it temporarily for development:
+1. Open Firefox → `about:debugging#/runtime/this-firefox`
+2. "Load Temporary Add-on" → select `manifest.json`
+3. Or package as `.zip` and upload to AMO
 
-1. Open Firefox and navigate to `about:debugging`.
-2. Click on "This Firefox".
-3. Click "Load Temporary Add-on...".
-4. Select the `manifest.json` file from this directory.
+## Storage
 
-## Architecture
+| Scope | Backend | Keys |
+|---|---|---|
+| Background | `browser.storage.local` | `blocklist`, `blockedIps`, `whitelist`, `filteringEnabled` |
+| Sidebar/Popup | `localStorage` | `ipwatch_profiles`, `ipwatch_favorites`, `ipwatch_blocklist`, `ipwatch_settings`, etc. |
+| History | IndexedDB (`ipwatch_db`) | Connection snapshots (capped at 500) |
 
-- **Background Script**: Handles persistent network listeners, DNS resolution, and blocklist enforcement.
-- **Sidebar**: The main dashboard for monitoring and configuration.
-- **Popup**: A lightweight interface for quick stats and toggling DNS filtering.
-- **Native Messaging (Optional)**: Can be paired with a native host for enhanced capabilities like process identification and detailed GeoIP.
+## Blocklist limit
 
-## Privacy
+100,000 domains per update call. Blocklist sources are parsed server-side from hosts/AdBlock format.
 
-Ad Bear is designed with privacy in mind. All monitoring data is stored locally in your browser and is never uploaded to any external servers, except for optional blocklist updates and public IP lookups (via `api.ipify.org`).
+## Permissions
+
+- `webRequest` + `webRequestBlocking` + `webNavigation` — intercept and block requests
+- `dns` — DNS resolution with custom servers
+- `storage` — persist blocklist/filtering state
+- `nativeMessaging` — optional companion host for GeoIP/bandwidth
+- `tabs` — tab identification
+- `<all_urls>` — monitor all network activity
 
 ## License
 
-This project is licensed under the MIT License.
+MPL 2.0
