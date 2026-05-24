@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="popup.css">
+    <title>Ad Bear</title>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="7" cy="8" r="2.5"/>
+                        <circle cx="17" cy="8" r="2.5"/>
+                        <circle cx="12" cy="13" r="7.5"/>
+                        <circle cx="9.5" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="14.5" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+                        <ellipse cx="12" cy="14.5" rx="1.5" ry="1" fill="currentColor" stroke="none"/>
+                    </svg>
+                </div>
+                <div class="header-info">
+                    <h1>Ad Bear</h1>
+                    <span id="status-text" class="status-text">Connecting...</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div id="status-dot" class="dot-offline"></div>
+            </div>
+        </header>
+
+        <div id="dns-toggle-bar" class="dns-toggle-bar">
+            <span class="toggle-label">DNS Filtering</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="dns-filter-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span id="dns-filter-status" class="toggle-status">Off</span>
+        </div>
+
+        <div class="section-label">DNS Monitor</div>
+        <div id="dns-stats" class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon dns-queries">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value" id="dns-total">-</span>
+                    <span class="stat-label">Queries</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon dns-blocked">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value" id="dns-blocked">-</span>
+                    <span class="stat-label">Blocked</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon dns-domains">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value" id="dns-domains">-</span>
+                    <span class="stat-label">Domains</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon dns-pct">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value" id="dns-blocked-pct">-</span>
+                    <span class="stat-label">Block Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="dns-bar-section" class="dns-bar-section">
+            <div class="dns-bar-header">
+                <span>Blocked this session</span>
+                <span id="dns-bar-pct" class="dns-bar-pct">0%</span>
+            </div>
+            <div class="dns-bar-bg">
+                <div id="dns-bar-fill" class="dns-bar-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <footer>
+            <button id="refresh-btn" class="btn-secondary" title="Refresh data">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+            <button id="open-sidebar" class="btn-primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                Open Dashboard
+            </button>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Ad Bear</title>
+    <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <div class="header-left">
+                <h1>Ad Bear <span id="ext-version" class="version-tag"></span></h1>
+                <span id="status-badge" class="badge-offline">--</span>
+                <span id="public-ip" class="public-ip" title="Your public IP address"></span>
+                <span id="profile-indicator" class="profile-indicator" title="Network profile"></span>
+            </div>
+            <div class="header-right">
+                <button id="refresh-btn" title="Refresh now">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Row -->
+        <div id="stats-row">
+            <div class="stat-card" id="stat-total">
+                <span class="stat-value" id="stat-total-val">0</span>
+                <span class="stat-label">Connections</span>
+            </div>
+            <div class="stat-card" id="stat-estab">
+                <span class="stat-value" id="stat-estab-val">0</span>
+                <span class="stat-label">Established</span>
+            </div>
+            <div class="stat-card" id="stat-dns-queries">
+                <span class="stat-value" id="stat-dns-queries-val">0</span>
+                <span class="stat-label">DNS Queries</span>
+            </div>
+            <div class="stat-card" id="stat-dns-blocked">
+                <span class="stat-value" id="stat-dns-blocked-val">0</span>
+                <span class="stat-label">DNS Blocked</span>
+            </div>
+            <div class="stat-card" id="stat-domains">
+                <span class="stat-value" id="stat-domains-val">0</span>
+                <span class="stat-label">Unique Domains</span>
+            </div>
+            <div class="stat-card" id="stat-bandwidth">
+                <span class="stat-value" id="stat-bandwidth-val">--</span>
+                <span class="stat-label">Bandwidth</span>
+            </div>
+        </div>
+
+        <!-- Toolbar (search + filters) -->
+        <div id="toolbar">
+            <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="search" placeholder='Search: port:443 process:firefox fingerprint:ssh category:database...' spellcheck="false">
+            </div>
+            <div class="filter-group">
+                <select id="state-filter">
+                    <option value="all">All States</option>
+                    <option value="ESTABLISHED">Established</option>
+                    <option value="LISTENING">Listening</option>
+                    <option value="CLOSE_WAIT">Close Wait</option>
+                    <option value="TIME_WAIT">Time Wait</option>
+                    <option value="SYN_SENT">SYN Sent</option>
+                </select>
+                <select id="proto-filter">
+                    <option value="all">All</option>
+                    <option value="TCP">TCP</option>
+                    <option value="UDP">UDP</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- View Toggle Tabs -->
+        <div id="view-toggle">
+            <button class="view-btn active" data-view="grouped" title="Connections" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Connections
+            </button>
+            <button class="view-btn" data-view="dns" title="DNS Monitor" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                DNS
+            </button>
+            <button class="view-btn" data-view="querylog" title="Query Log" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Query Log
+            </button>
+            <button class="view-btn" data-view="history" title="History" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                History
+            </button>
+            <button class="view-btn" data-view="favorites" title="Favorites" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Favorites
+            </button>
+            <button class="view-btn" data-view="blocked" title="Blocked" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                Blocked
+            </button>
+            <button class="view-btn" data-view="alerts" title="Alerts" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Alerts
+            </button>
+            <button class="view-btn" data-view="topology" title="Topology" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="3"/><circle cx="19" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="5" y1="9" x2="12" y2="15"/><line x1="19" y1="9" x2="12" y2="15"/></svg>
+                Topology
+            </button>
+            <button class="view-btn" data-view="blocklists" title="Blocklists" draggable="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Blocklists
+            </button>
+        </div>
+
+        <!-- View Panels Container -->
+        <div id="table-container">
+
+            <!-- Connections View -->
+            <div id="grouped-view" class="view-panel active">
+                <table id="connections-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="protocol">Proto</th>
+                            <th>Service</th>
+                            <th data-sort="local_ip">Local</th>
+                            <th data-sort="remote_ip">Remote</th>
+                            <th data-sort="risk_level">Risk</th>
+                            <th data-sort="process_name">Process</th>
+                            <th data-sort="state">State</th>
+                        </tr>
+                    </thead>
+                    <tbody id="connections-body"></tbody>
+                </table>
+            </div>
+
+            <!-- DNS Monitor View -->
+            <div id="dns-view" class="view-panel">
+                <div id="dns-monitor">
+                    <div class="dns-header">
+                        <div class="dns-status">
+                            <span id="dns-status-dot" class="status-dot offline"></span>
+                            <span id="dns-status-text">DNS Filtering Disabled</span>
+                        </div>
+                        <div class="dns-header-actions">
+                            <select id="dns-tab-filter" class="dns-tab-filter" title="Filter by tab">
+                                <option value="all">All Tabs</option>
+                            </select>
+                            <button id="dns-live-toggle" class="btn-dns-live" title="Toggle live updates">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                <span id="dns-live-text">Live: OFF</span>
+                            </button>
+                            <button id="dns-toggle-btn" class="btn-dns">Enable</button>
+                        </div>
+                    </div>
+
+                    <div class="dns-stats-row">
+                        <div class="dns-stat-card">
+                            <div class="dns-stat-value" id="dns-total-queries">0</div>
+                            <div class="dns-stat-label">Total Queries</div>
+                        </div>
+                        <div class="dns-stat-card">
+                            <div class="dns-stat-value" id="dns-blocked">0</div>
+                            <div class="dns-stat-label">Blocked</div>
+                        </div>
+                        <div class="dns-stat-card">
+                            <div class="dns-stat-value" id="dns-blocked-pct">0%</div>
+                            <div class="dns-stat-label">Blocked %</div>
+                        </div>
+                        <div class="dns-stat-card">
+                            <div class="dns-stat-value" id="dns-unique">0</div>
+                            <div class="dns-stat-label">Unique Domains</div>
+                        </div>
+                        <div class="dns-stat-card">
+                            <div class="dns-stat-value" id="dns-avg-time">0ms</div>
+                            <div class="dns-stat-label">Avg Resolve</div>
+                        </div>
+                        <div class="dns-stat-card">
+                            <div class="dns-stat-value" id="dns-rules">0</div>
+                            <div class="dns-stat-label">Block Rules</div>
+                        </div>
+                    </div>
+
+                    <div class="dns-section dns-query-stream">
+                        <div class="dns-section-header">
+                            <h3>Live Query Stream</h3>
+                            <div class="stream-filters">
+                                <select id="stream-filter">
+                                    <option value="all">All</option>
+                                    <option value="blocked">Blocked</option>
+                                    <option value="allowed">Allowed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="dns-query-stream" class="query-stream"></div>
+                        <div class="stream-resize-handle" id="stream-resize-handle"></div>
+                    </div>
+
+                    <div class="dns-grid">
+                        <div class="dns-section" data-section="dns-top-blocked">
+                            <div class="dns-section-header">
+                                <h3>Top Blocked Domains</h3>
+                                <button class="dns-section-toggle" data-toggle="dns-top-blocked" title="Minimize">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                            </div>
+                            <div id="dns-top-blocked" class="dns-section-content"></div>
+                        </div>
+                        <div class="dns-section" data-section="dns-top-allowed">
+                            <div class="dns-section-header">
+                                <h3>Top Allowed Domains</h3>
+                                <button class="dns-section-toggle" data-toggle="dns-top-allowed" title="Minimize">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                            </div>
+                            <div id="dns-top-allowed" class="dns-section-content"></div>
+                        </div>
+                        <div class="dns-section" data-section="dns-query-types">
+                            <div class="dns-section-header">
+                                <h3>Request Types</h3>
+                                <button class="dns-section-toggle" data-toggle="dns-query-types" title="Minimize">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                            </div>
+                            <div id="dns-query-types" class="dns-section-content"></div>
+                        </div>
+                        <div class="dns-section" data-section="dns-impact-severity">
+                            <div class="dns-section-header">
+                                <h3>Impact Severity</h3>
+                                <button class="dns-section-toggle" data-toggle="dns-impact-severity" title="Minimize">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                            </div>
+                            <div id="dns-impact-severity" class="dns-section-content"></div>
+                        </div>
+                        <div class="dns-section" data-section="dns-clients">
+                            <div class="dns-section-header">
+                                <h3>Tabs (Clients)</h3>
+                                <button class="dns-section-toggle" data-toggle="dns-clients" title="Minimize">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                            </div>
+                            <div id="dns-clients" class="dns-section-content"></div>
+                        </div>
+                    </div>
+
+                    <div class="dns-section dns-chart-section">
+                        <h3>Queries Over Time</h3>
+                        <div class="dns-time-chart" id="dns-time-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Query Log View -->
+            <div id="querylog-view" class="view-panel">
+                <div id="querylog-header">
+                    <div class="querylog-filters">
+                        <select id="querylog-filter">
+                            <option value="all">All Queries</option>
+                            <option value="blocked">Blocked Only</option>
+                            <option value="allowed">Allowed Only</option>
+                        </select>
+                        <input type="text" id="querylog-search" placeholder="Search domains..." class="querylog-search-input">
+                    </div>
+                    <button id="querylog-clear-btn" class="btn-secondary" title="Clear log">Clear</button>
+                </div>
+                <div id="querylog-container">
+                    <table id="querylog-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Domain</th>
+                                <th>Resolved IPs</th>
+                                <th>Resolve Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="querylog-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- History View -->
+            <div id="history-view" class="view-panel">
+                <div id="history-chart"></div>
+                <div id="history-table-container">
+                    <table id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Total</th>
+                                <th>Established</th>
+                                <th>Listening</th>
+                                <th>High Risk</th>
+                                <th>Domains</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Favorites View -->
+            <div id="favorites-view" class="view-panel">
+                <table id="favorites-table">
+                    <thead>
+                        <tr>
+                            <th>Remote</th>
+                            <th>Domain</th>
+                            <th>Port</th>
+                            <th>Source</th>
+                            <th>Risk</th>
+                            <th>State</th>
+                            <th>Reqs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="favorites-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Blocked View -->
+            <div id="blocked-view" class="view-panel">
+                <table id="blocked-table">
+                    <thead>
+                        <tr>
+                            <th>Remote</th>
+                            <th>Domain</th>
+                            <th>Port</th>
+                            <th>Source</th>
+                            <th>Risk</th>
+                            <th>State</th>
+                            <th>Reqs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="blocked-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Alerts View -->
+            <div id="alerts-view" class="view-panel">
+                <div id="alerts-header">
+                    <div class="alerts-filters">
+                        <select id="alerts-severity-filter">
+                            <option value="all">All Severities</option>
+                            <option value="high">High / Critical</option>
+                            <option value="medium">Medium</option>
+                        </select>
+                    </div>
+                    <button id="alerts-clear-btn" class="btn-secondary" title="Clear alerts">Clear</button>
+                </div>
+                <div id="alerts-container">
+                    <div id="alerts-body"></div>
+                </div>
+            </div>
+
+            <!-- Topology View -->
+            <div id="topology-view" class="view-panel">
+                <div id="topology-toolbar">
+                    <div class="topology-controls">
+                        <select id="topology-layout" title="Graph layout">
+                            <option value="force">Force-Directed</option>
+                            <option value="radial">Radial</option>
+                            <option value="hierarchical">Hierarchical</option>
+                        </select>
+                        <select id="topology-group-by" title="Group nodes by">
+                            <option value="process">By Process</option>
+                            <option value="service">By Service</option>
+                            <option value="risk">By Risk</option>
+                            <option value="none">No Grouping</option>
+                        </select>
+                        <button id="topology-reset-btn" class="btn-secondary" title="Reset view">Reset</button>
+                        <button id="topology-export-btn" class="btn-secondary" title="Export as PNG">Export PNG</button>
+                    </div>
+                    <div class="topology-stats">
+                        <span id="topo-node-count">0 nodes</span>
+                        <span id="topo-edge-count">0 edges</span>
+                        <span id="topo-cluster-count">0 clusters</span>
+                    </div>
+                </div>
+                <div id="topology-canvas-container">
+                    <canvas id="topology-canvas"></canvas>
+                    <div id="topology-tooltip" class="topology-tooltip hidden">
+                        <div id="topology-tooltip-content"></div>
+                    </div>
+                </div>
+                <div id="topology-legend">
+                    <div class="legend-section">
+                        <h4>Risk Level</h4>
+                        <div class="legend-item"><span class="legend-dot safe"></span> Safe</div>
+                        <div class="legend-item"><span class="legend-dot low"></span> Low</div>
+                        <div class="legend-item"><span class="legend-dot medium"></span> Medium</div>
+                        <div class="legend-item"><span class="legend-dot high"></span> High</div>
+                        <div class="legend-item"><span class="legend-dot critical"></span> Critical</div>
+                    </div>
+                    <div class="legend-section">
+                        <h4>Connection State</h4>
+                        <div class="legend-item"><span class="legend-line estab"></span> Established</div>
+                        <div class="legend-item"><span class="legend-line listen"></span> Listening</div>
+                        <div class="legend-item"><span class="legend-line wait"></span> Wait</div>
+                        <div class="legend-item"><span class="legend-line syn"></span> SYN</div>
+                    </div>
+                    <div class="legend-section">
+                        <h4>Node Type</h4>
+                        <div class="legend-item"><span class="legend-node local"></span> Local</div>
+                        <div class="legend-item"><span class="legend-node remote"></span> Remote (size = activity)</div>
+                        <div class="legend-item"><span class="legend-node cluster"></span> Cluster</div>
+                        <div class="legend-item"><span class="legend-node blocked"></span> Blocked</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blocklist Manager View -->
+            <div id="blocklists-view" class="view-panel">
+                <div id="blocklist-manager">
+                    <div class="blocklist-toolbar">
+                        <div class="blocklist-toolbar-left">
+                            <select id="blocklist-category-filter" title="Filter by category">
+                                <option value="all">All Categories</option>
+                                <option value="ads">Ad Blocking</option>
+                                <option value="privacy">Privacy</option>
+                                <option value="security">Security</option>
+                                <option value="annoyances">Annoyances</option>
+                                <option value="unbreak">Unbreak</option>
+                                <option value="regional">Regional</option>
+                            </select>
+                            <input type="text" id="blocklist-search" placeholder="Search blocklists..." class="blocklist-search-input">
+                        </div>
+                        <div class="blocklist-toolbar-right">
+                            <button id="blocklist-download-all-btn" class="btn-secondary" title="Download all visible lists">Download All</button>
+                            <button id="blocklist-update-all-btn" class="btn-secondary" title="Update all downloaded lists">Update All</button>
+                            <button id="blocklist-pause-all-btn" class="btn-secondary" title="Pause all downloaded lists">Pause All</button>
+                            <button id="blocklist-resume-all-btn" class="btn-secondary" title="Resume all downloaded lists">Resume All</button>
+                            <button id="blocklist-remove-all-btn" class="btn-danger" title="Remove all downloaded lists">Remove All</button>
+                        </div>
+                    </div>
+
+                    <div class="blocklist-section">
+                        <div class="blocklist-section-header">
+                            <h3>Quick Templates</h3>
+                            <span class="blocklist-section-desc">One-click to download curated blocklist combinations</span>
+                        </div>
+                        <div id="blocklist-templates" class="template-grid"></div>
+                    </div>
+
+                    <div class="blocklist-section">
+                        <div class="blocklist-section-header">
+                            <h3>Individual Lists</h3>
+                            <span class="blocklist-section-desc" id="blocklist-count-info">0 of 0 lists downloaded</span>
+                        </div>
+                        <div id="blocklist-list" class="blocklist-items"></div>
+                    </div>
+
+                    <div class="blocklist-section">
+                        <div class="blocklist-section-header">
+                            <h3>Downloaded Lists</h3>
+                            <span class="blocklist-section-desc" id="blocklist-total-rules">0 total domains blocked</span>
+                        </div>
+                        <div id="blocklist-downloaded" class="downloaded-items"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Summary Bar -->
+        <div id="summary-bar">
+            <span id="showing-count">0 of 0</span>
+            <span id="last-updated">--</span>
+            <button id="export-btn" title="Export connections (Ctrl+E)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export
+            </button>
+            <button id="settings-btn" title="Settings (Ctrl+,)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="overlay hidden">
+        <div id="settings-panel">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button id="settings-close" title="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-group">
+                    <h3>DNS Provider</h3>
+                    <p class="setting-desc">Used for reverse DNS lookups and DNS resolution monitoring.</p>
+                    <select id="setting-dns-provider">
+                        <option value="1.1.1.1">Cloudflare (1.1.1.1)</option>
+                        <option value="1.0.0.1">Cloudflare Secondary (1.0.0.1)</option>
+                        <option value="8.8.8.8">Google (8.8.8.8)</option>
+                        <option value="8.8.4.4">Google Secondary (8.8.4.4)</option>
+                        <option value="9.9.9.9">Quad9 (9.9.9.9)</option>
+                        <option value="149.112.112.112">Quad9 Secondary (149.112.112.112)</option>
+                        <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="text" id="setting-dns-custom" class="dns-custom-input" placeholder="Enter custom DNS server IP" style="display:none">
+                </div>
+
+                <div class="setting-group">
+                    <h3>DNS Filtering</h3>
+                    <p class="setting-desc">Block ads, trackers, and malware at the browser level. Intercepts requests before they leave Firefox.</p>
+                    <label class="setting-toggle">
+                        <input type="checkbox" id="setting-dns-filtering">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Enable DNS filtering</span>
+                    </label>
+                    <div class="setting-detail" id="dns-filtering-status">Disabled</div>
+                    <button id="dns-filtering-update-btn" class="btn-secondary">Download Blocklists</button>
+                    <button id="dns-cache-clear-btn" class="btn-secondary" style="margin-top:6px">Clear DNS Cache</button>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Network Profiles</h3>
+                    <p class="setting-desc">Different settings for different networks. Auto-switches based on your local IP.</p>
+                    <div id="profile-selector" class="profile-selector">
+                        <button class="profile-btn active" data-profile="home">Home</button>
+                        <button class="profile-btn" data-profile="work">Work</button>
+                        <button class="profile-btn" data-profile="public">Public WiFi</button>
+                    </div>
+                    <div id="profile-settings" class="profile-settings">
+                        <div class="profile-setting-row">
+                            <span class="profile-setting-label">Alert Mode</span>
+                            <select id="profile-alert-mode">
+                                <option value="monitor">Monitor Only</option>
+                                <option value="alert">Show Alerts</option>
+                                <option value="strict">Strict (Auto-block)</option>
+                            </select>
+                        </div>
+                        <div class="profile-setting-row">
+                            <span class="profile-setting-label">DNS Filtering</span>
+                            <label class="setting-toggle">
+                                <input type="checkbox" id="profile-dns-filtering">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="profile-setting-row">
+                            <span class="profile-setting-label">Blocklist Feeds</span>
+                            <label class="setting-toggle">
+                                <input type="checkbox" id="profile-blocklist-feeds">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="profile-setting-row">
+                            <span class="profile-setting-label">Strict Mode</span>
+                            <label class="setting-toggle">
+                                <input type="checkbox" id="profile-strict-mode">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="profile-setting-row">
+                            <span class="profile-setting-label">Gateway Subnet</span>
+                            <input type="text" id="profile-gateway-subnet" class="profile-input" placeholder="e.g. 192.168.1.">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Blocklist Sources</h3>
+                    <p class="setting-desc">Auto-download known malicious IPs. Updated on each refresh.</p>
+                    <label class="setting-toggle">
+                        <input type="checkbox" id="setting-blocklist-auto" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Auto-download from feeds</span>
+                    </label>
+                    <div class="setting-detail" id="blocklist-status">Loading...</div>
+                    <button id="blocklist-update-btn" class="btn-secondary">Update Now</button>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Custom Blocklists</h3>
+                    <p class="setting-desc">Add your own blocklist URLs (hosts format or domain list).</p>
+                    <div class="custom-blocklist-inputs">
+                        <input type="text" id="custom-blocklist-url" class="custom-url-input" placeholder="https://example.com/blocklist.txt">
+                        <button id="add-custom-blocklist-btn" class="btn-secondary">Add URL</button>
+                    </div>
+                    <div id="custom-blocklist-list"></div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Blocked Domains</h3>
+                    <p class="setting-desc">Manually blocked domains. Added to blocklist on next update.</p>
+                    <div class="manual-domain-inputs">
+                        <input type="text" id="manual-domain-input" class="manual-domain-input" placeholder="example.com">
+                        <button id="add-manual-domain-btn" class="btn-secondary">Block</button>
+                    </div>
+                    <div id="manual-domain-list"></div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Whitelist</h3>
+                    <p class="setting-desc">Domains that should never be blocked, even if in blocklists.</p>
+                    <div class="manual-domain-inputs">
+                        <input type="text" id="whitelist-domain-input" class="manual-domain-input" placeholder="example.com">
+                        <button id="add-whitelist-domain-btn" class="btn-secondary">Allow</button>
+                    </div>
+                    <div id="whitelist-domain-list"></div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Refresh Interval</h3>
+                    <p class="setting-desc">How often to poll for new connections.</p>
+                    <select id="setting-refresh-interval">
+                        <option value="1000">1 second</option>
+                        <option value="3000" selected>3 seconds</option>
+                        <option value="5000">5 seconds</option>
+                        <option value="10000">10 seconds</option>
+                        <option value="30000">30 seconds</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Export</h3>
+                    <p class="setting-desc">Download current connections as CSV or JSON.</p>
+                    <div class="btn-row">
+                        <button id="export-csv-btn" class="btn-secondary">Export CSV</button>
+                        <button id="export-json-btn" class="btn-secondary">Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Keyboard Shortcuts</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>K</kbd> Focus search</div>
+                        <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>E</kbd> Export connections</div>
+                        <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>,</kbd> Open settings</div>
+                        <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>D</kbd> DNS Monitor</div>
+                        <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>B</kbd> Query Log</div>
+                        <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>L</kbd> Blocklist Manager</div>
+                        <div class="shortcut"><kbd>Esc</kbd> Close detail / settings</div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Data</h3>
+                    <p class="setting-desc">Manage stored data.</p>
+                    <div class="btn-row">
+                        <button id="clear-history-btn" class="btn-danger">Clear History</button>
+                        <button id="clear-favorites-btn" class="btn-danger">Clear Favorites</button>
+                        <button id="clear-blocklist-btn" class="btn-danger">Clear Blocklist</button>
+                        <button id="clear-querylog-btn" class="btn-danger">Clear Query Log</button>
+                        <button id="clear-db-btn" class="btn-danger">Clear Persistent DB</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../blocklists.js"></script>
+    <script src="sidebar.js"></script>
+</body>
+</html>
