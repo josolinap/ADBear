@@ -191,17 +191,31 @@ function scheduleConnectionCleanup() {
 // ==================== WEBREQUEST LISTENERS ====================
 function isDomainBlocked(domain) {
     if (!filteringEnabled || !domain) return false;
-    if (whitelistedDomains.has(domain)) return false;
-    if (blockedIps.has(domain)) return true;
+    const d = domain.toLowerCase().replace(/\.$/, "");
 
-    let current = domain;
+    // Whitelist check (walk parent chain)
+    let current = d;
+    while (current) {
+        if (whitelistedDomains.has(current)) return false;
+        const firstDot = current.indexOf(".");
+        if (firstDot === -1) break;
+        current = current.substring(firstDot + 1);
+        if (!current.includes(".")) break;
+    }
+
+    // Domain block check (walk parent chain)
+    current = d;
     while (current) {
         if (blockedDomains.has(current)) return true;
         const firstDot = current.indexOf(".");
         if (firstDot === -1) break;
         current = current.substring(firstDot + 1);
-        if (!current.includes(".")) break; // Don't block TLDs
+        if (!current.includes(".")) break;
     }
+
+    // IP-based block: only if domain is literally an IP
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(d) && blockedIps.has(d)) return true;
+
     return false;
 }
 
@@ -359,6 +373,7 @@ let reconnectTimer = null;
 let nativeRetries = 0;
 
 function connectNative() {
+    if (typeof browser.runtime.connectNative === "undefined") return;  // Android
     if (connecting || nativePort) return;
     connecting = true;
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
@@ -440,7 +455,11 @@ browser.storage.local.get(["blocklist", "blockedIps", "whitelist", "filteringEna
     if (data.filteringEnabled) filteringEnabled = data.filteringEnabled;
 }).catch(() => {});
 
-connectNative();
+if (typeof browser.runtime.connectNative !== "undefined") {
+    connectNative();
+} else {
+    console.info("Ad Bear: native messaging unavailable (mobile) — GeoIP/bandwidth disabled");
+}
 
 // ==================== MESSAGE HANDLER ====================
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -541,5 +560,25 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 sendResponse({ success: !!resolved, addresses: resolved ? resolved.result.addresses : [] });
             }).catch(() => sendResponse({ success: false, addresses: [] }));
             return true;
+
+        case "get_platform":
+            (async () => {
+                try {
+                    const info = await browser.runtime.getPlatformInfo();
+                    sendResponse({
+                        os: info.os, arch: info.arch,
+                        isAndroid: info.os === "android",
+                        hasSidebar: typeof browser.sidebarAction !== "undefined",
+                        hasContextMenus: typeof browser.contextMenus !== "undefined",
+                        hasNativeMessaging: typeof browser.runtime.connectNative !== "undefined",
+                    });
+                } catch { sendResponse({ os: "unknown", isAndroid: false }); }
+            })();
+            return true;
+
+        default:
+            console.warn("Ad Bear: unknown action:", message.action);
+            sendResponse({ error: "unknown_action", action: message.action });
+            return false;
     }
 });

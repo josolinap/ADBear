@@ -371,3 +371,14 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--border-light);
 }
+
+
+/* ===== Mobile (Android) ===== */
+body.mobile #app { min-width: 280px; max-width: 100vw; }
+body.mobile .header-right { display: none; }
+body.mobile .stats-grid { grid-template-columns: 1fr; }
+body.mobile .stat-card { padding: 8px 12px; }
+body.mobile .dns-toggle-bar { padding: 12px; }
+body.mobile .section-label { padding: 8px 12px 4px; }
+body.mobile button, body.mobile .toggle-switch { min-height: 44px; }
+body.mobile .header { padding-top: max(12px, env(safe-area-inset-top)); }

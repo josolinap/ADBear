@@ -1,18 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Ad Bear",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Monitor network connections with GeoIP, threat intel, blocklists, and firewall control",
-
   "browser_specific_settings": {
     "gecko": {
       "id": "ADBear@jolinap.dedyn.io",
       "data_collection_permissions": {
-        "required": ["websiteActivity"]
-      }
+        "required": [
+          "websiteActivity"
+        ]
+      },
+      "strict_min_version": "115.0"
     }
   },
-
   "permissions": [
     "storage",
     "webRequest",
@@ -20,19 +21,17 @@
     "webNavigation",
     "dns",
     "tabs",
+    "contextMenus",
     "nativeMessaging"
   ],
-
   "host_permissions": [
     "<all_urls>"
   ],
-
   "sidebar_action": {
     "default_title": "Ad Bear",
     "default_panel": "sidebar/sidebar.html",
     "default_icon": "icons/icon-48.png"
   },
-
   "action": {
     "default_title": "Ad Bear",
     "default_popup": "popup/popup.html",
@@ -42,15 +41,14 @@
       "48": "icons/icon-48.png"
     }
   },
-
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
-
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },
-
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

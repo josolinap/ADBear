@@ -1,3 +1,35 @@
+// ===== Mobile detection (Android compatibility) =====
+(async function detectMobile() {
+  try {
+    const info = await browser.runtime.getPlatformInfo();
+    if (info.os === "android") {
+      document.body.classList.add("mobile");
+      console.debug("Ad Bear: mobile mode (Android)");
+    }
+  } catch {}
+  if (window.innerWidth < 600) document.body.classList.add("mobile");
+  window.addEventListener("resize", () => {
+    if (window.innerWidth < 600) document.body.classList.add("mobile");
+    else document.body.classList.remove("mobile");
+  });
+})();
+
+async function checkNativeAvailability() {
+  try {
+    const platform = await browser.runtime.sendMessage({ action: "get_platform" });
+    if (platform && !platform.hasNativeMessaging) {
+      const banner = document.createElement("div");
+      banner.style.cssText = "background:#fef3c7;color:#92400e;padding:8px 12px;font-size:12px;border-bottom:1px solid #fcd34d;";
+      banner.textContent = "GeoIP/bandwidth unavailable on mobile. Connection tracking still works.";
+      document.body.insertBefore(banner, document.body.firstChild);
+      document.querySelectorAll(".requires-native").forEach(el => el.style.display = "none");
+    }
+  } catch {}
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", checkNativeAvailability);
+} else { checkNativeAvailability(); }
+
 let connections = [];
 let filteredConnections = [];
 let previousConnections = new Set();
@@ -1460,7 +1492,7 @@ function toggleBlocklist(val) {
     browser.runtime.sendMessage({
         action: "update_blocklist",
         domains: [...dnsFilteringDomains].slice(0, 100000),
-        ips: [...autoBlocklistIps],
+        ips: [], // IPs no longer used (parser now extracts domains)
         whitelist: [...whitelistedDomains],
         enabled: dnsFilteringEnabled
     }).catch(() => {});
@@ -1600,31 +1632,79 @@ function loadAutoBlocklist() { try { const s = localStorage.getItem(AUTO_BLOCKLI
 async function fetchBlocklistFeed(url) {
     try {
         const resp = await fetch(url);
-        if (!resp.ok) return new Set();
+        if (!resp.ok) {
+            console.warn(`Ad Bear: blocklist ${url} returned HTTP ${resp.status}`);
+            return new Set();
+        }
         const text = await resp.text();
-        const ips = new Set();
+        const domains = new Set();
+
+        // Regex: valid domain (RFC 1035 simplified) — excludes pure IPs
+        const domainRegex = /^(?!^\d+\.\d+\.\d+\.\d+$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
         const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+
         for (const line of text.split("\n")) {
             const t = line.trim();
-            if (!t || t.startsWith("#")) continue;
+            // Skip comments and empty lines
+            if (!t || t.startsWith("#") || t.startsWith("!")) continue;
+
+            // AdBlock format: ||example.com^ or ||example.com^$options
+            if (t.startsWith("||")) {
+                const match = t.match(/^\|\|([a-z0-9.-]+)\^?/i);
+                if (match) {
+                    const d = match[1].toLowerCase();
+                    // Filter out IPs and invalid domains
+                    if (!ipRegex.test(d) && domainRegex.test(d)) {
+                        domains.add(d);
+                    }
+                }
+                continue;
+            }
+
+            // Hosts format: IP domain [aliases...]
+            // e.g. "0.0.0.0 example.com" or "127.0.0.1 example.com www.example.com"
             const parts = t.split(/\s+/);
-            if (ipRegex.test(parts[0]) && parts[0] !== "0.0.0.0" && parts[0] !== "127.0.0.1") ips.add(parts[0]);
-            else if (parts.length >= 2 && ipRegex.test(parts[1]) && parts[1] !== "0.0.0.0" && parts[1] !== "127.0.0.1") ips.add(parts[1]);
+            if (parts.length >= 2 && ipRegex.test(parts[0])) {
+                // Take all parts after the IP — they're domain aliases
+                for (let i = 1; i < parts.length; i++) {
+                    const d = parts[i].toLowerCase();
+                    if (domainRegex.test(d) && d !== "localhost" && d !== "ip6-localhost" && d !== "broadcasthost") {
+                        domains.add(d);
+                    }
+                }
+                continue;
+            }
+
+            // Domain-only line (some lists are just "example.com" one per line)
+            if (parts.length === 1) {
+                const d = parts[0].toLowerCase();
+                if (domainRegex.test(d) && !ipRegex.test(d)) {
+                    domains.add(d);
+                }
+                continue;
+            }
         }
-        return ips;
-    } catch (e) { return new Set(); }
+
+        console.debug(`Ad Bear: parsed ${domains.size} domains from ${url.split("/").pop()}`);
+        return domains;
+    } catch (e) {
+        console.warn(`Ad Bear: failed to fetch blocklist ${url}:`, e.message);
+        return new Set();
+    }
 }
+
 
 async function updateAutoBlocklist() {
     if (!blocklistAutoToggle.checked) { blocklistStatus.textContent = "Auto-download disabled"; return; }
     blocklistStatus.textContent = "Downloading...";
     for (const feed of BLOCKLIST_FEEDS) {
         blocklistStatus.textContent = `Downloading ${feed.name}...`;
-        const ips = await fetchBlocklistFeed(feed.url);
-        for (const ip of ips) autoBlocklistIps.add(ip);
+        const domains = await fetchBlocklistFeed(feed.url);
+        for (const d of domains) dnsFilteringDomains.add(d);
+        blocklistStatus.textContent = `${feed.name}: ${dnsFilteringDomains.size} domains total`;
     }
     try { localStorage.setItem(AUTO_BLOCKLIST_KEY, JSON.stringify([...autoBlocklistIps])); localStorage.setItem(AUTO_BLOCKLIST_KEY + "_updated", new Date().toLocaleString()); } catch (e) {}
-    try { await browser.runtime.sendMessage({ action: "update_blocklist", domains: [...dnsFilteringDomains].slice(0, 100000), ips: [...autoBlocklistIps], whitelist: [...whitelistedDomains], enabled: dnsFilteringEnabled }); } catch (e) {}
+    try { await browser.runtime.sendMessage({ action: "update_blocklist", domains: [...dnsFilteringDomains].slice(0, 100000), ips: [], whitelist: [...whitelistedDomains], enabled: dnsFilteringEnabled }); } catch (e) {}
     updateBlocklistStatus();
     render();
 }
@@ -1686,7 +1766,7 @@ async function updateDnsFiltering() {
     for (const d of manualBlockedDomains) all.add(d);
     const domains = [...all];
     try { localStorage.setItem("ipwatch_dns_filtering_domains", JSON.stringify(domains)); localStorage.setItem("ipwatch_dns_filtering_updated", new Date().toLocaleString()); } catch (e) {}
-    try { await browser.runtime.sendMessage({ action: "update_blocklist", domains: domains.slice(0, 100000), ips: [...autoBlocklistIps], whitelist: [...whitelistedDomains], enabled: true }); } catch (e) {}
+    try { await browser.runtime.sendMessage({ action: "update_blocklist", domains: domains.slice(0, 100000), ips: [], whitelist: [...whitelistedDomains], enabled: true }); } catch (e) {}
     dnsFilteringUpdateBtn.disabled = false;
     updateDnsFilteringStatus();
 }
@@ -2605,7 +2685,7 @@ const BlocklistManager = {
             await browser.runtime.sendMessage({
                 action: "update_blocklist",
                 domains: dnsFilteringDomains.slice(0, 100000),
-                ips: [...autoBlocklistIps],
+                ips: [], // IPs no longer used (parser now extracts domains)
                 whitelist: [...whitelistedDomains],
                 enabled: dnsFilteringEnabled
             });

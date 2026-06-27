@@ -58,6 +58,22 @@ dnsFilterToggle.addEventListener("change", async () => {
         await browser.runtime.sendMessage({ action: "set_filtering", enabled });
         dnsFilterStatus.textContent = enabled ? "On" : "Off";
         dnsFilterStatus.className = enabled ? "toggle-status active" : "toggle-status";
+
+        // If enabling filtering, check if blocklists are loaded.
+        // If not, open the sidebar/dashboard so the user can download them.
+        if (enabled) {
+            const stats = await browser.runtime.sendMessage({ action: "get_stats" });
+            if (stats && stats.domainCount === 0) {
+                dnsFilterStatus.textContent = "On — download lists!";
+                dnsFilterStatus.className = "toggle-status warning";
+                // Open dashboard so user can download blocklists
+                if (!isAndroid && typeof browser.sidebarAction !== "undefined") {
+                    try { await browser.sidebarAction.open(); } catch {}
+                } else {
+                    try { await browser.tabs.create({ url: browser.runtime.getURL("sidebar/sidebar.html") }); } catch {}
+                }
+            }
+        }
     } catch (e) {
         dnsFilterToggle.checked = !enabled;
     }
@@ -70,10 +86,41 @@ refreshBtn.addEventListener("click", () => {
     fetchDNSStats();
 });
 
-openSidebar.addEventListener("click", () => {
-    browser.sidebarAction.open();
-    window.close();
+let isAndroid = false;
+
+async function detectPlatform() {
+    try {
+        const info = await browser.runtime.getPlatformInfo();
+        isAndroid = info.os === "android";
+    } catch { isAndroid = false; }
+    if (isAndroid) {
+        if (openSidebar) openSidebar.textContent = "Open Dashboard";
+        document.body.classList.add("mobile");
+    } else if (typeof browser.sidebarAction === "undefined") {
+        if (openSidebar) openSidebar.textContent = "Open Dashboard";
+    }
+}
+
+openSidebar.addEventListener("click", async () => {
+    // Desktop: open sidebar. Android/fallback: open in new tab.
+    if (!isAndroid && typeof browser.sidebarAction !== "undefined") {
+        try {
+            await browser.sidebarAction.open();
+            window.close();
+            return;
+        } catch (e) {
+            console.warn("sidebarAction.open failed, falling back to tab:", e);
+        }
+    }
+    try {
+        await browser.tabs.create({ url: browser.runtime.getURL("sidebar/sidebar.html") });
+        window.close();
+    } catch (e) {
+        console.error("Could not open dashboard:", e);
+    }
 });
+
+detectPlatform();
 
 ping();
 fetchDNSStats();
